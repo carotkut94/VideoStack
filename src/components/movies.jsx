@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { getMovies } from "../services/fakeMovieService";
-
+import Like from "../components/common/like";
 class Movies extends Component {
   state = {
     movies: getMovies()
@@ -27,6 +27,7 @@ class Movies extends Component {
               <th>Stock</th>
               <th>Rate</th>
               <th />
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -36,6 +37,9 @@ class Movies extends Component {
                 <td>{movie.genre.name}</td>
                 <td>{movie.numberInStock}</td>
                 <td>{movie.dailyRentalRate}</td>
+                <td>
+                  <Like liked={movie.liked} />
+                </td>
                 <td>
                   <button
                     onClick={() => this.handleDelete(movie)}

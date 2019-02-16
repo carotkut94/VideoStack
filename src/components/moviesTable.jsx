@@ -30,6 +30,7 @@ class MoviesTable extends Component {
   ];
   render() {
     const { listMovies, onSort, sortColumn } = this.props;
+
     return (
       <Table
         columns={this.columns}

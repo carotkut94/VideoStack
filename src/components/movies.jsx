@@ -1,21 +1,24 @@
 import React, { Component } from "react";
 import { getMovies } from "../services/fakeMovieService";
-import Like from "../components/common/like";
 import Pagination from "../components/common/pagination";
 import { paginate } from "../utils/paginate";
 import ListGroup from "../components/common/listGroup";
 import { getGenres } from "../services/fakeGenreService";
+import MoviesTable from "../components/moviesTable";
+import _ from "lodash";
 
 class Movies extends Component {
   state = {
     movies: [],
     pageSize: 4,
     currentPage: 1,
-    genres: []
+    genres: [],
+    sortColumn: { path: "title", order: "asc" }
   };
 
   componentDidMount() {
-    this.setState({ movies: getMovies(), genres: getGenres() });
+    const genres = [{ _id: "", name: "All Genres" }, ...getGenres()];
+    this.setState({ movies: getMovies(), genres });
   }
 
   handleDelete = movie => {
@@ -36,15 +39,40 @@ class Movies extends Component {
   };
 
   handleSelect = genre => {
-    this.setState({ selectedGenre: genre });
+    this.setState({ selectedGenre: genre, currentPage: 1 });
+  };
+
+  handleSort = path => {
+    const sortColumn = { ...this.state.sortColumn };
+    if (sortColumn.path === path) {
+      sortColumn.order = sortColumn.order === "asc" ? "desc" : "asc";
+    } else {
+      sortColumn.path = path;
+      sortColumn.order = "asc";
+    }
+    this.setState({ sortColumn });
   };
 
   render() {
-    const { length: count } = this.state.movies;
-    const { pageSize, currentPage } = this.state;
+    const {
+      pageSize,
+      currentPage,
+      sortColumn,
+      selectedGenre,
+      movies: allMovies
+    } = this.state;
 
-    if (count === 0) return <p>There are no movies in database</p>;
-    const listMovies = paginate(this.state.movies, currentPage, pageSize);
+    const filtered =
+      selectedGenre && selectedGenre._id
+        ? allMovies.filter(m => m.genre._id === selectedGenre._id)
+        : allMovies;
+
+    if (filtered.length === 0) return <p>There are no movies in database</p>;
+
+    const sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order]);
+
+    const listMovies = paginate(sorted, currentPage, pageSize);
+
     return (
       <div className="row">
         <div className="col-3">
@@ -55,47 +83,17 @@ class Movies extends Component {
           />
         </div>
         <div className="col">
-          <p>Showing {count} movies in database</p>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Genre</th>
-                <th>Stock</th>
-                <th>Rate</th>
-                <th />
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {listMovies.map(movie => (
-                <tr key={movie._id}>
-                  <td>{movie.title}</td>
-                  <td>{movie.genre.name}</td>
-                  <td>{movie.numberInStock}</td>
-                  <td>{movie.dailyRentalRate}</td>
-                  <td>
-                    <Like
-                      liked={movie.liked}
-                      onLikedClicked={() => this.handleLike(movie)}
-                    />
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => this.handleDelete(movie)}
-                      className="btn btn-danger btn-sm"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <p>Showing {filtered.length} movies in database</p>
+          <MoviesTable
+            onSort={this.handleSort}
+            listMovies={listMovies}
+            onDelete={this.handleDelete}
+            onLike={this.handleLike}
+          />
           <Pagination
             onPageChanged={this.handlePageChange}
             pageSize={pageSize}
-            itemCount={count}
+            itemCount={filtered.length}
             currentPage={currentPage}
           />
         </div>
